@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebAPI_1.Data;
+using WebAPI_1.Model;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -23,29 +24,76 @@ namespace WebAPI_1.Controllers
         {
             return Ok(await _context.Employees.ToListAsync());
         }
-        // GET api/<EmployeesController>/5
+        // GET: api/employees/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public async Task<ActionResult<Employee>> GetEmployee(int id)
         {
-            return "value";
+            var employee = await _context.Employees.FindAsync(id);
+
+            if (employee == null)
+                return NotFound();
+
+            return Ok(employee);
         }
 
-        // POST api/<EmployeesController>
+        // POST: api/employees
         [HttpPost]
-        public void Post([FromBody] string value)
+        public async Task<ActionResult<Employee>> CreateEmployee(Employee employee)
         {
+            _context.Employees.Add(employee);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(
+                nameof(GetEmployee),
+                new { id = employee.Id },
+                employee
+            );
         }
 
-        // PUT api/<EmployeesController>/5
+
+        // PUT: api/employees/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        public async Task<IActionResult> UpdateEmployee(int id, Employee employee)
         {
+            if (id != employee.Id)
+                return BadRequest("ID mismatch");
+
+            _context.Entry(employee).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!EmployeeExists(id))
+                    return NotFound();
+                else
+                    throw;
+            }
+
+            return NoContent();
         }
 
-        // DELETE api/<EmployeesController>/5
+        // DELETE: api/employees/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task<IActionResult> DeleteEmployee(int id)
         {
+            var employee = await _context.Employees.FindAsync(id);
+
+            if (employee == null)
+                return NotFound();
+
+            _context.Employees.Remove(employee);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+
+        private bool EmployeeExists(int id)
+        {
+            return _context.Employees.Any(e => e.Id == id);
         }
     }
 }
