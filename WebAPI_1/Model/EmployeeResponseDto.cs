@@ -1,26 +1,13 @@
 ﻿namespace WebAPI_1.Model
 {
-    public class Employee
+    public class EmployeeResponseDto
     {
-        // Primary Key
         public int Id { get; set; }
-
-        // Employee full name
         public string Name { get; set; } = null!;
-
-        // Unique email address
         public string Email { get; set; } = null!;
-
-        // Department name (simple for now)
         public string Department { get; set; } = null!;
-
-        // Salary (decimal for money)
         public decimal Salary { get; set; }
-
-        // Date employee joined company
         public DateTime DateOfJoining { get; set; }
-
-        // Soft delete flag
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; }
     }
 }
