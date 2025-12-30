@@ -26,29 +26,54 @@ namespace WebAPI_1.Controllers
         }
         // GET: api/employees/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Employee>> GetEmployee(int id)
+        public async Task<ActionResult<EmployeeResponseDto>> GetEmployeeById(int id)
         {
             var employee = await _context.Employees.FindAsync(id);
 
             if (employee == null)
                 return NotFound();
 
-            return Ok(employee);
+            var response = new EmployeeResponseDto
+            {
+                Id = employee.Id,
+                Name = employee.Name,
+                Email = employee.Email,
+                Department = employee.Department,
+                Salary = employee.Salary,
+                DateOfJoining = employee.DateOfJoining,
+                IsActive = employee.IsActive
+            };
+
+            return Ok(response);
         }
+
 
         // POST: api/employees
         [HttpPost]
-        public async Task<ActionResult<Employee>> CreateEmployee(Employee employee)
+        public async Task<IActionResult> CreateEmployee(CreateEmployeeDto dto)
         {
+            // Model validation happens automatically
+
+            var employee = new Employee
+            {
+                Name = dto.Name,
+                Email = dto.Email,
+                Department = dto.Department,
+                Salary = dto.Salary,
+                DateOfJoining = dto.DateOfJoining,
+                IsActive = true
+            };
+
             _context.Employees.Add(employee);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(
-                nameof(GetEmployee),
+                nameof(GetEmployeeById),
                 new { id = employee.Id },
                 employee
             );
         }
+
 
 
         // PUT: api/employees/5
