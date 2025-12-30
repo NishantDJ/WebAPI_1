@@ -3,12 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using WebAPI_1.Data;
 using WebAPI_1.Model;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace WebAPI_1.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class EmployeesController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -18,52 +16,61 @@ namespace WebAPI_1.Controllers
             _context = context;
         }
 
-        // GET: api/<EmployeesController>
+        // =========================
+        // GET: api/employees
+        // =========================
         [HttpGet]
-        public async Task<IActionResult> GetEmployees()
+        public async Task<ActionResult<IEnumerable<EmployeeResponseDto>>> GetEmployees()
         {
-            return Ok(await _context.Employees.ToListAsync());
+            var employees = await _context.Employees
+                .Where(e => e.IsActive)
+                .Select(e => new EmployeeResponseDto
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Email = e.Email,
+                    Department = e.Department,
+                    Salary = e.Salary,
+                    DateOfJoining = e.DateOfJoining,
+                    IsActive = e.IsActive
+                })
+                .ToListAsync();
+
+            return Ok(employees);
         }
-        // GET: api/employees/5
+
+        // =========================
+        // GET: api/employees/{id}
+        // =========================
         [HttpGet("{id}")]
         public async Task<ActionResult<EmployeeResponseDto>> GetEmployeeById(int id)
         {
-            var employee = await _context.Employees.FindAsync(id);
+            var employee = await _context.Employees
+                .Where(e => e.Id == id && e.IsActive)
+                .Select(e => new EmployeeResponseDto
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Email = e.Email,
+                    Department = e.Department,
+                    Salary = e.Salary,
+                    DateOfJoining = e.DateOfJoining,
+                    IsActive = e.IsActive
+                })
+                .FirstOrDefaultAsync();
 
             if (employee == null)
                 return NotFound();
 
-            var response = new EmployeeResponseDto
-            {
-                Id = employee.Id,
-                Name = employee.Name,
-                Email = employee.Email,
-                Department = employee.Department,
-                Salary = employee.Salary,
-                DateOfJoining = employee.DateOfJoining,
-                IsActive = employee.IsActive
-            };
-
-            return Ok(response);
+            return Ok(employee);
         }
-        //Trigger commit
-        /// <summary>
-        /// git email change 
-        /// </summary>
-        /// <param name="dto"></param>
-        /// <returns></returns>
-        /// <summary>
-        /// git email change 
-        /// </summary>
-        /// <param name="dto"></param>
-        /// <returns></returns>
 
+        // =========================
         // POST: api/employees
+        // =========================
         [HttpPost]
         public async Task<IActionResult> CreateEmployee(CreateEmployeeDto dto)
         {
-            // Model validation happens automatically
-
             var employee = new Employee
             {
                 Name = dto.Name,
@@ -77,58 +84,61 @@ namespace WebAPI_1.Controllers
             _context.Employees.Add(employee);
             await _context.SaveChangesAsync();
 
+            var response = new EmployeeResponseDto
+            {
+                Id = employee.Id,
+                Name = employee.Name,
+                Email = employee.Email,
+                Department = employee.Department,
+                Salary = employee.Salary,
+                DateOfJoining = employee.DateOfJoining,
+                IsActive = employee.IsActive
+            };
+
             return CreatedAtAction(
                 nameof(GetEmployeeById),
                 new { id = employee.Id },
-                employee
+                response
             );
         }
 
-
-
-        // PUT: api/employees/5
+        // =========================
+        // PUT: api/employees/{id}
+        // =========================
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateEmployee(int id, Employee employee)
-        {
-            if (id != employee.Id)
-                return BadRequest("ID mismatch");
-
-            _context.Entry(employee).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!EmployeeExists(id))
-                    return NotFound();
-                else
-                    throw;
-            }
-
-            return NoContent();
-        }
-
-        // DELETE: api/employees/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteEmployee(int id)
+        public async Task<IActionResult> UpdateEmployee(int id, UpdateEmployeeDto dto)
         {
             var employee = await _context.Employees.FindAsync(id);
 
-            if (employee == null)
+            if (employee == null || !employee.IsActive)
                 return NotFound();
 
-            _context.Employees.Remove(employee);
+            employee.Name = dto.Name;
+            employee.Department = dto.Department;
+            employee.Salary = dto.Salary;
+            employee.IsActive = dto.IsActive;
+
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
-
-        private bool EmployeeExists(int id)
+        // =========================
+        // DELETE: api/employees/{id}
+        // (Soft Delete)
+        // =========================
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteEmployee(int id)
         {
-            return _context.Employees.Any(e => e.Id == id);
+            var employee = await _context.Employees.FindAsync(id);
+
+            if (employee == null || !employee.IsActive)
+                return NotFound();
+
+            employee.IsActive = false;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 }
