@@ -23,6 +23,7 @@ namespace WebAPI_1.Controllers
         public async Task<ActionResult<IEnumerable<EmployeeResponseDto>>> GetEmployees()
         {
             var employees = await _context.Employees
+                .AsNoTracking()
                 .Where(e => e.IsActive)
                 .Select(e => new EmployeeResponseDto
                 {
@@ -46,6 +47,7 @@ namespace WebAPI_1.Controllers
         public async Task<ActionResult<EmployeeResponseDto>> GetEmployeeById(int id)
         {
             var employee = await _context.Employees
+                .AsNoTracking()
                 .Where(e => e.Id == id && e.IsActive)
                 .Select(e => new EmployeeResponseDto
                 {
@@ -69,8 +71,14 @@ namespace WebAPI_1.Controllers
         // POST: api/employees
         // =========================
         [HttpPost]
-        public async Task<IActionResult> CreateEmployee(CreateEmployeeDto dto)
+        public async Task<IActionResult> CreateEmployee([FromBody] CreateEmployeeDto dto)
         {
+            var emailExists = await _context.Employees
+                .AnyAsync(e => e.Email == dto.Email);
+
+            if (emailExists)
+                return BadRequest("Employee with this email already exists.");
+
             var employee = new Employee
             {
                 Name = dto.Name,
@@ -95,18 +103,15 @@ namespace WebAPI_1.Controllers
                 IsActive = employee.IsActive
             };
 
-            return CreatedAtAction(
-                nameof(GetEmployeeById),
-                new { id = employee.Id },
-                response
-            );
+            return CreatedAtAction(nameof(GetEmployeeById),
+                new { id = employee.Id }, response);
         }
 
         // =========================
         // PUT: api/employees/{id}
         // =========================
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateEmployee(int id, UpdateEmployeeDto dto)
+        public async Task<IActionResult> UpdateEmployee(int id, [FromBody] UpdateEmployeeDto dto)
         {
             var employee = await _context.Employees.FindAsync(id);
 
