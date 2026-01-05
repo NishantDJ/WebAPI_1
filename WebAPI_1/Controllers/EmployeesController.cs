@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebAPI_1.Data;
+using WebAPI_1.Exceptions;
 using WebAPI_1.Model;
 
 namespace WebAPI_1.Controllers
@@ -62,7 +63,7 @@ namespace WebAPI_1.Controllers
                 .FirstOrDefaultAsync();
 
             if (employee == null)
-                return NotFound();
+                throw new BusinessException("Employee not found.");
 
             return Ok(employee);
         }
@@ -77,7 +78,7 @@ namespace WebAPI_1.Controllers
                 .AnyAsync(e => e.Email == dto.Email);
 
             if (emailExists)
-                return BadRequest("Employee with this email already exists.");
+                throw new BusinessException("Employee with this email already exists.");
 
             var employee = new Employee
             {
@@ -116,7 +117,7 @@ namespace WebAPI_1.Controllers
             var employee = await _context.Employees.FindAsync(id);
 
             if (employee == null || !employee.IsActive)
-                return NotFound();
+                throw new BusinessException("Employee not found or inactive.");
 
             employee.Name = dto.Name;
             employee.Department = dto.Department;
@@ -138,7 +139,7 @@ namespace WebAPI_1.Controllers
             var employee = await _context.Employees.FindAsync(id);
 
             if (employee == null || !employee.IsActive)
-                return NotFound();
+                throw new BusinessException("Employee not found or already deleted.");
 
             employee.IsActive = false;
             await _context.SaveChangesAsync();
