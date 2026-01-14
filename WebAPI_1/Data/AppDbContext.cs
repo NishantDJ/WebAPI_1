@@ -7,5 +7,6 @@ namespace WebAPI_1.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
         public DbSet<Employee> Employees => Set<Employee>();
+        public DbSet<User> Users { get; set; }
     }
 }

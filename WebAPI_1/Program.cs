@@ -1,6 +1,10 @@
+using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using WebAPI_1.Data;
+using WebAPI_1.Interface;
 using WebAPI_1.Middleware;
+using WebAPI_1.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
@@ -34,8 +38,31 @@ if (app.Environment.IsDevelopment())
 }
 app.UseMiddleware<ExceptionMiddleware>();
 //app.UseHttpsRedirection();
+builder.Services.AddAuthentication("Bearer")
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
+        )
+    };
+});
 
+builder.Services.AddAuthorization();
+
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<AuthService>();
+
+app.UseAuthentication();
 app.UseAuthorization();
+
 
 app.UseCors("AllowSpecificOrigin");
 
