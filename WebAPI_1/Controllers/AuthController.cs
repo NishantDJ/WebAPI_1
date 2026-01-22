@@ -19,4 +19,12 @@ public class AuthController : ControllerBase
         var token = _authService.Login(dto.Username, dto.Password);
         return Ok(new { token });
     }
+
+    [HttpPost("register")]
+    public IActionResult Register([FromBody] RegisterDto dto)
+    {
+        _authService.Register(dto);
+        return Ok("User registered successfully");
+    }
+
 }

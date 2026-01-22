@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 using WebAPI_1.Data;
 using WebAPI_1.Interface;
 using WebAPI_1.Middleware;
@@ -58,6 +59,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 // Exception middleware early in pipeline

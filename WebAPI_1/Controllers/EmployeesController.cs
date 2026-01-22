@@ -7,7 +7,7 @@ using WebAPI_1.Model;
 
 namespace WebAPI_1.Controllers
 {
-    [Authorize]
+   [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class EmployeesController : ControllerBase
@@ -22,6 +22,7 @@ namespace WebAPI_1.Controllers
         // =========================
         // GET: api/employees
         // =========================
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<EmployeeResponseDto>>> GetEmployees()
         {
