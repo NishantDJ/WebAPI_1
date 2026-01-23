@@ -1,4 +1,9 @@
-﻿using BCrypt.Net;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using BCrypt.Net;
+using Microsoft.IdentityModel.Tokens;
 using WebAPI_1.Data;
 using WebAPI_1.Interface;
 using WebAPI_1.Model;
@@ -16,35 +21,40 @@ namespace WebAPI_1.Services
             _jwtService = jwtService;
         }
 
-       
-
-        public string Login(string username, string password)
+        // ================= LOGIN =================
+        public AuthResponse? Login(string username, string password)
         {
-            var user = _context.Users
-                .FirstOrDefault(u => u.Username == username && u.IsActive);
-
+            var user = _context.Users.SingleOrDefault(x => x.Username == username);
             if (user == null)
-                throw new UnauthorizedAccessException("Invalid username");
+                return null;
 
-            // ✅ Correct BCrypt usage
             if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-                throw new UnauthorizedAccessException("Invalid password");
+                return null;
 
-            return _jwtService.GenerateToken(user);
+            var accessToken = _jwtService.GenerateToken(user);
+            var refreshToken = GenerateRefreshToken();
+
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+
+            _context.SaveChanges();
+
+            return new AuthResponse
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
         }
 
+        // ================= REGISTER =================
         public void Register(RegisterDto dto)
         {
-            // 1️⃣ Check if user already exists
             bool exists = _context.Users.Any(u => u.Username == dto.Username);
-
             if (exists)
                 throw new Exception("User already exists");
 
-            // 2️⃣ Hash password (THIS IS THE KEY PART)
             string hashedPassword = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
-            // 3️⃣ Create user entity
             var user = new User
             {
                 Username = dto.Username,
@@ -53,10 +63,70 @@ namespace WebAPI_1.Services
                 IsActive = true
             };
 
-            // 4️⃣ Save to database
             _context.Users.Add(user);
             _context.SaveChanges();
         }
 
+        // ================= REFRESH TOKEN =================
+        public AuthResponse? RefreshToken(RefreshTokenRequestDto dto)
+        {
+            var principal = GetPrincipalFromExpiredToken(dto.AccessToken);
+            var username = principal.Identity?.Name;
+
+            if (username == null)
+                return null;
+
+            var user = _context.Users.SingleOrDefault(x => x.Username == username);
+
+            if (user == null ||
+                user.RefreshToken != dto.RefreshToken ||
+                user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+            {
+                return null;
+            }
+
+            var newAccessToken = _jwtService.GenerateToken(user);
+            var newRefreshToken = GenerateRefreshToken();
+
+            user.RefreshToken = newRefreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+
+            _context.SaveChanges();
+
+            return new AuthResponse
+            {
+                AccessToken = newAccessToken,
+                RefreshToken = newRefreshToken
+            };
+        }
+
+        // ================= HELPERS =================
+        private string GenerateRefreshToken()
+        {
+            return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        }
+
+        private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+        {
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateAudience = false,
+                ValidateIssuer = false,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes("THIS_IS_YOUR_SECRET_KEY")
+                ),
+                ValidateLifetime = false // 🔥 allow expired tokens
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var principal = tokenHandler.ValidateToken(
+                token,
+                tokenValidationParameters,
+                out SecurityToken _
+            );
+
+            return principal;
+        }
     }
 }

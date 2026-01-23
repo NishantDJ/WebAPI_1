@@ -27,4 +27,15 @@ public class AuthController : ControllerBase
         return Ok("User registered successfully");
     }
 
+    [HttpPost("refresh-token")]
+    public IActionResult RefreshToken(RefreshTokenRequestDto dto)
+    {
+        var response = _authService.RefreshToken(dto);
+
+        if (response == null)
+            return Unauthorized("Invalid Refresh Token");
+
+        return Ok(response);
+    }
+
 }
