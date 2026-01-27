@@ -12,7 +12,7 @@ using WebAPI_1.Data;
 namespace WebAPI_1.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260123192327_AddRefreshTokenToUser")]
+    [Migration("20260127132133_AddRefreshTokenToUser")]
     partial class AddRefreshTokenToUser
     {
         /// <inheritdoc />
@@ -73,6 +73,12 @@ namespace WebAPI_1.Migrations
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RefreshTokenExpiryTime")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Role")
                         .IsRequired()
