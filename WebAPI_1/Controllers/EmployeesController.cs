@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Net.WebSockets;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebAPI_1.Data;
@@ -24,11 +25,19 @@ namespace WebAPI_1.Controllers
         // =========================
         [Authorize]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<EmployeeResponseDto>>> GetEmployees()
+        public async Task<ActionResult<IEnumerable<EmployeeResponseDto>>> GetEmployees(int page = 1, int pagesize = 10)
         {
-            var employees = await _context.Employees
+
+            var totalEmployees = await _context.Employees
                 .AsNoTracking()
                 .Where(e => e.IsActive)
+                .CountAsync();
+            var totalPages = (int)Math.Ceiling(totalEmployees / (double)pagesize);
+            var employeesPerPage = _context.Employees
+                .AsNoTracking()
+                .Where(e => e.IsActive)
+                .Skip((page - 1) * pagesize)
+                .Take(pagesize)
                 .Select(e => new EmployeeResponseDto
                 {
                     Id = e.Id,
@@ -38,10 +47,9 @@ namespace WebAPI_1.Controllers
                     Salary = e.Salary,
                     DateOfJoining = e.DateOfJoining,
                     IsActive = e.IsActive
-                })
-                .ToListAsync();
+                });           
 
-            return Ok(employees);
+            return Ok(employeesPerPage);
         }
 
         // =========================

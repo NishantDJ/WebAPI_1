@@ -114,7 +114,7 @@ namespace WebAPI_1.Services
                 ValidateIssuer = false,
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes("THIS_IS_YOUR_SECRET_KEY")
+                    Encoding.UTF8.GetBytes("THIS_IS_A_SUPER_SECRET_KEY_12345")
                 ),
                 ValidateLifetime = false // 🔥 allow expired tokens
             };
