@@ -52,7 +52,8 @@ builder.Services.AddAuthorization();
 // Application services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<AuthService>();
-
+builder.Services.AddMemoryCache();
+builder.Services.AddLazyCache();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
